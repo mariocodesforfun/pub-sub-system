@@ -36,6 +36,7 @@ locking -> reader-writer
 wire protocol -> 4-byte length-prefixed framing
 threading model -> reader + delivery threads 
 backpressure policy -> bounded queue, drop newest and log
+topic parsing -> space-delimited within the assembled frame (1st space ends the command, 2nd space ends the topic, rest is payload); safe since the frame's total length is already known from the length prefix. Constraint: topic names can't contain spaces.
  
 
 ![Architecture diagram](assets/architecture-diagram.png)
