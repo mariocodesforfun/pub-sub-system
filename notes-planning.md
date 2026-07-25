@@ -37,6 +37,32 @@ wire protocol -> 4-byte length-prefixed framing
 threading model -> reader + delivery threads 
 backpressure policy -> bounded queue, drop newest and log
 topic parsing -> space-delimited within the assembled frame (1st space ends the command, 2nd space ends the topic, rest is payload); safe since the frame's total length is already known from the length prefix. Constraint: topic names can't contain spaces.
+multi-topic subscriptions -> one connection can subscribe to many topics, not just one. Avoids N connections (2N threads) for a client wanting N topics. Consequence: SubscriberConnection holds a collection of topics, not a single topic; Registry.add() is called once per SUBSCRIBE received on that connection; disconnect cleanup must remove the connection from every topic list it's in, not just one.
  
 
 ![Architecture diagram](assets/architecture-diagram.png)
+
+
+Message:
+
+init: content: str = "", type: MessageType = '', topic: str =""
+methods:
+feed_bytes(public)
+setters(private): set_type, set_content, set_topic
+getters(public): get_type, get_content, get_topic
+is_assembled(public)
+
+
+SubscriberConnection:
+
+fields: id (socket), outbound queue (of shared_ptr<Message>), delivery thread, topics: set<str>
+created: by Broker, when a Message finishes assembling with type == SUBSCRIBE
+on creation: triggers Registry.add(topic, this_connection) - Registry.add needs the topic since Registry is a topic->connections map
+methods: not yet finalized
+
+
+
+
+
+
+
